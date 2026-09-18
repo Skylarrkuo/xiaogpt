@@ -3,7 +3,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from dataclasses import dataclass, field
+import re
+from dataclasses import dataclass, field, fields
 from typing import Any, Iterable, Literal
 
 import yaml
@@ -48,6 +49,44 @@ MI_ASK_SIMULATE_DATA = {
 }
 
 
+# 用 ASCII 而不是中文：日志经常被重定向到文件，Windows 控制台编码会把
+# 中文标记变成乱码，反而看不懂。
+MASK = "***"
+
+# 需要打码的顶层字段。这里必须用显式集合而不是按名字正则匹配——
+# `keyword` 和 `change_prompt_keyword` 名字里都带 key，但它们是唤醒词，
+# 匹配 "key" 会把它们一起打码，反而让日志失去意义。
+# account 是手机号，属于个人信息，一并打码，便于把日志贴出去求助。
+_MASKED_FIELDS = frozenset(
+    {
+        "account",
+        "password",
+        "openai_key",
+        "gemini_key",
+        "volc_access_key",
+        "volc_secret_key",
+        "volc_api_key",
+        "deepseek_api_key",
+    }
+)
+
+# tts_options / gpt_options 里的值由 from_options 注入（volc 的
+# access_key/secret_key、fish 的 api_key），这里按字典键名判断。
+_SECRET_NAME = re.compile(r"key|secret|token|password|passwd|credential", re.I)
+
+
+def _redact(value: Any) -> Any:
+    """递归打码嵌套结构里名字像凭据的字段。"""
+    if isinstance(value, dict):
+        return {
+            k: (MASK if _SECRET_NAME.search(str(k)) else _redact(v))
+            for k, v in value.items()
+        }
+    if isinstance(value, (list, tuple)):
+        return type(value)(_redact(v) for v in value)
+    return value
+
+
 @dataclass
 class Config:
     hardware: str = "LX06"
@@ -82,6 +121,20 @@ class Config:
     ] = "mi"
     tts_options: dict[str, Any] = field(default_factory=dict)
     gpt_options: dict[str, Any] = field(default_factory=dict)
+
+    def __repr__(self) -> str:
+        # dataclass 默认生成的 __repr__ 会把所有字段原样打出，而
+        # xiaogpt.py 在 -v/-vv 下会 log.debug(config)，等于把密码和各
+        # 家 API key 明文写进日志。这里覆盖掉，让任何打印 config 的地方
+        # 都自动安全。
+        parts = []
+        for f in fields(self):
+            value = getattr(self, f.name)
+            if f.name in _MASKED_FIELDS:
+                parts.append(f"{f.name}={MASK!r}")
+            else:
+                parts.append(f"{f.name}={_redact(value)!r}")
+        return f"{type(self).__name__}({', '.join(parts)})"
 
     def __post_init__(self) -> None:
         if self.proxy:
