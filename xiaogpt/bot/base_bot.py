@@ -32,6 +32,14 @@ class BaseBot(ABC):
     def change_prompt(self, new_prompt: str) -> None:
         pass
 
+    def validate(self) -> None:
+        """启动自检钩子，默认不做任何事。
+
+        子类可覆盖以在开始轮询前核对配置（如模型名、凭据）。
+        校验不通过应抛出异常以终止启动，不要静默降级——否则用户
+        对着音箱说话时只会得到一片沉默，无从判断问题出在哪。
+        """
+
 
 class ChatHistoryMixin:
     history: list[tuple[str, str]]

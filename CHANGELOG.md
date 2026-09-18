@@ -104,10 +104,14 @@ API key 明文写进终端，随手贴日志就会泄露。
   调用成功，中英文回答均正常
 - **`deepseek-flash` 支持思考模式**：`thinking: {"type": "enabled"}` 返回
   HTTP 200，响应含真实的 `reasoning_content` 字段
+- **启动校验**：错误模型名 / 无效 key 均以退出码 1 中止并给出可操作提示；
+  网络不通时 warn 后跳过。经本地 7890 代理与直连两种方式验证
 
 **未验证**：
 
 - 真实语音链路（唤醒 → DeepSeek → TTS 回放）尚未端到端跑通
+- 修复后的 `chatgptapi_bot` 代理路径只验证了 client 构造，无 OpenAI key
+  无法真实调用
 
 ### DeepSeek 模型
 
@@ -130,6 +134,40 @@ curl -H "Authorization: Bearer $DEEPSEEK_API_KEY" https://api.deepseek.com/model
 deepseek_api_key: "sk-..."
 deepseek_model: ""          # 留空即 deepseek-flash
 ```
+
+### 启动时校验模型名
+
+`deepseek_bot` 的 `ask`/`ask_stream` 会把异常吞掉并返回空字符串，所以模型名
+写错的表现是**音箱一声不吭**——终端有报错，但用户听到的只是沉默。加了
+`deepseek_model` 配置项之后打错字的概率上升，于是在启动时拦一道。
+
+`BaseBot` 新增 `validate()` 钩子（默认空实现），`run_forever` 在
+`init_all_data()` 之后、开始轮询之前调用。`DeepseekBot` 的实现会拉取
+`/models` 比对：
+
+- 模型名不在列表 → `SystemExit`，退出码 1，并列出可用模型
+- API key 被拒（401/403）→ 同样直接退出
+- 网络不通（`ConnectError` 等）→ 打印 warn 后**跳过校验**，不阻断启动
+
+报错信息刻意使用 ASCII 而非中文：本机控制台编码会把中文变成乱码
+（启动横幅同样是乱码），而一个看不懂的报错等于没有报错。
+
+### 修复 httpx 代理参数失效
+
+`requirements.txt` 固定 `httpx[socks]==0.28.1`，而 httpx 0.28 已移除
+`proxies=` 参数（现为 `proxy=`，单数）。原先三个位置都写的 `proxies=`：
+
+- `deepseek_bot` 的 `ask` / `ask_stream`
+- `chatgptapi_bot` 的 `ask` / `ask_stream`
+
+只要配置里设了 `proxy`，`httpx.AsyncClient(**kwargs)` 就会抛
+`TypeError: unexpected keyword argument 'proxies'`，而该调用位于 try 块
+之外，因此**每个问题都会失败**。而且这个 TypeError 会被误判成「网络不通」，
+静默掩盖真实原因。已全部改为 `proxy=`。
+
+注意环境变量代理不受影响：`trust_env=True` 会读取 `HTTP_PROXY`/`HTTPS_PROXY`，
+所以 `one_click.ps1` 里设的那两个变量一直是生效的，坏的只是配置文件里的
+`proxy` 字段。
 
 命名沿用了 `gemini_model` 的既有模式（同为顶层字段，bot 内用
 `配置值 or 硬编码默认`）。`deepseek_api_key` 无法用 `gpt_options` 表达，

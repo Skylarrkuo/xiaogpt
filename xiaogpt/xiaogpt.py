@@ -379,6 +379,8 @@ class MiGPT:
 
     async def run_forever(self):
         await self.init_all_data()
+        # 启动自检（如模型名、凭据），失败则直接退出而不是让音箱沉默
+        self.chatbot.validate()
         task = asyncio.create_task(self.poll_latest_ask())
         assert task is not None  # to keep the reference to task, do not remove this
         print(

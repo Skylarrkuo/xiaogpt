@@ -16,6 +16,40 @@ if TYPE_CHECKING:
 #: 未在配置中指定模型时使用的默认值
 DEFAULT_MODEL = "deepseek-flash"
 
+API_BASE = "https://api.deepseek.com"
+
+
+def fetch_available_models(
+    api_key: str, proxy: str | None = None
+) -> list[str] | None:
+    """查询 API 支持的模型列表。
+
+    网络不通时返回 None（调用方应跳过校验，不要因此阻断启动）；
+    API key 无效则直接抛出 SystemExit——那属于配置错误，早点报出来更好。
+    """
+    kwargs = {"proxy": proxy} if proxy else {}
+    try:
+        with httpx.Client(trust_env=True, timeout=15, **kwargs) as client:
+            resp = client.get(
+                f"{API_BASE}/models",
+                headers={"Authorization": f"Bearer {api_key}"},
+            )
+            resp.raise_for_status()
+        return sorted(m["id"] for m in resp.json().get("data", []))
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code in (401, 403):
+            raise SystemExit(
+                f"\nDeepSeek API key was rejected (HTTP {e.response.status_code}).\n"
+                "Check `deepseek_api_key` in config.yaml.\n"
+            ) from None
+        print(f"[warn] could not fetch model list (HTTP {e.response.status_code}), "
+              "skipping validation")
+        return None
+    except Exception as e:
+        print(f"[warn] could not reach DeepSeek to validate the model name "
+              f"({type(e).__name__}), skipping validation")
+        return None
+
 
 @dataclasses.dataclass
 class DeepseekBot(ChatHistoryMixin, BaseBot):
@@ -41,6 +75,26 @@ class DeepseekBot(ChatHistoryMixin, BaseBot):
     def actual_model(self) -> str:
         """配置 → 默认值。gpt_options.model 的覆盖在 _build_kwargs 里生效。"""
         return self.model or DEFAULT_MODEL
+
+    def validate(self) -> None:
+        """启动时向 API 核对模型名。
+
+        ask/ask_stream 会把异常吞掉并返回空字符串，模型名写错的表现是
+        音箱一声不吭。这里提前拦下来，给出可操作的报错。
+        """
+        models = fetch_available_models(self.deepseek_api_key, self.proxy)
+        if models is None:
+            return  # 取不到列表，不阻断启动
+        if self.actual_model in models:
+            return
+        # 报错信息用 ASCII：本机控制台对中文编码有问题，中文报错会变成乱码，
+        # 一个看不懂的报错等于没有报错。
+        raise SystemExit(
+            f"\nDeepSeek model {self.actual_model!r} is not supported by the API.\n"
+            f"Available models: {', '.join(models)}\n"
+            f"Fix `deepseek_model` in config.yaml "
+            f"(leave it empty to use {DEFAULT_MODEL}).\n"
+        )
 
     def _make_openai_client(self, sess: httpx.AsyncClient) -> openai.AsyncOpenAI:
         import openai
@@ -89,7 +143,7 @@ class DeepseekBot(ChatHistoryMixin, BaseBot):
         kwargs = self._build_kwargs(options)
         httpx_kwargs = {}
         if self.proxy:
-            httpx_kwargs["proxies"] = self.proxy
+            httpx_kwargs["proxy"] = self.proxy
         async with httpx.AsyncClient(trust_env=True, **httpx_kwargs) as sess:
             client = self._make_openai_client(sess)
             try:
@@ -111,7 +165,7 @@ class DeepseekBot(ChatHistoryMixin, BaseBot):
         kwargs = self._build_kwargs(options)
         httpx_kwargs = {}
         if self.proxy:
-            httpx_kwargs["proxies"] = self.proxy
+            httpx_kwargs["proxy"] = self.proxy
         async with httpx.AsyncClient(trust_env=True, **httpx_kwargs) as sess:
             client = self._make_openai_client(sess)
             try:
