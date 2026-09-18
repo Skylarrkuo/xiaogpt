@@ -102,6 +102,8 @@ class Config:
     volc_secret_key: str = os.getenv("VOLC_SECRET_KEY", "")
     volc_api_key: str = os.getenv("volc_api_key", "")
     deepseek_api_key: str = os.getenv("DEEPSEEK_API_KEY", "")
+    # 留空则用 deepseek_bot.DEFAULT_MODEL
+    deepseek_model: str = os.getenv("DEEPSEEK_MODEL", "")
     proxy: str | None = None
     mi_did: str = os.getenv("MI_DID", "")
     keyword: Iterable[str] = KEY_WORD

@@ -54,7 +54,9 @@ openai_key: ""
 # ----- Deepseek -----
 # Deepseek 的 API key: https://platform.deepseek.com
 deepseek_api_key: ""
-# 模型固定使用 deepseek-flash（API 上只有这一个），无需配置。
+# 模型名。留空即用 deepseek-flash。
+# 查看当前可用模型: GET https://api.deepseek.com/models
+deepseek_model: ""
 # deepseek-flash 支持思考模式，默认关闭以获得最快响应；
 # 如需开启，在 gpt_options 中设置 reasoning_effort：
 # gpt_options:

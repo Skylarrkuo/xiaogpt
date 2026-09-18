@@ -13,9 +13,16 @@ if TYPE_CHECKING:
     import openai
 
 
+#: 未在配置中指定模型时使用的默认值
+DEFAULT_MODEL = "deepseek-flash"
+
+
 @dataclasses.dataclass
 class DeepseekBot(ChatHistoryMixin, BaseBot):
     """Deepseek API bot.
+
+    模型由配置的 deepseek_model 决定，留空则用 DEFAULT_MODEL。
+    也可用 gpt_options.model 覆盖（优先级最高）。
 
     默认关闭思考模式以获得最快响应速度（适合语音助手场景）。
     如需开启思考模式，在 gpt_options 中设置 reasoning_effort，例如：
@@ -24,11 +31,16 @@ class DeepseekBot(ChatHistoryMixin, BaseBot):
     """
 
     name: ClassVar[str] = "Deepseek"
-    default_options: ClassVar[dict[str, str]] = {"model": "deepseek-flash"}
     deepseek_api_key: str
+    model: str = ""
     api_base: str = "https://api.deepseek.com"
     proxy: str | None = None
     history: list[tuple[str, str]] = dataclasses.field(default_factory=list, init=False)
+
+    @property
+    def actual_model(self) -> str:
+        """配置 → 默认值。gpt_options.model 的覆盖在 _build_kwargs 里生效。"""
+        return self.model or DEFAULT_MODEL
 
     def _make_openai_client(self, sess: httpx.AsyncClient) -> openai.AsyncOpenAI:
         import openai
@@ -43,6 +55,7 @@ class DeepseekBot(ChatHistoryMixin, BaseBot):
     def from_config(cls, config):
         return cls(
             deepseek_api_key=config.deepseek_api_key,
+            model=config.deepseek_model,
             api_base="https://api.deepseek.com",
             proxy=config.proxy,
         )
@@ -54,7 +67,7 @@ class DeepseekBot(ChatHistoryMixin, BaseBot):
         - 如果用户通过 gpt_options 传入 reasoning_effort，则自动开启思考模式。
         - 思考模式下不发送 temperature/top_p 等不兼容参数。
         """
-        kwargs = {**self.default_options, **options}
+        kwargs = {"model": self.actual_model, **options}
         reasoning_effort = kwargs.pop("reasoning_effort", None)
 
         if reasoning_effort:

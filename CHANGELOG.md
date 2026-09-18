@@ -111,8 +111,32 @@ API key 明文写进终端，随手贴日志就会泄露。
 
 ### DeepSeek 模型
 
-模型固定为 `deepseek-flash`。先前代码里写的 `deepseek-v4-flash` 在 API 上
-并不存在，是本 fork 自造的名字，已修正。
+模型通过配置项 **`deepseek_model`** 选择，留空则用内置默认值
+`deepseek-flash`。查看当前可用模型：
+
+```bash
+curl -H "Authorization: Bearer $DEEPSEEK_API_KEY" https://api.deepseek.com/models
+```
+
+优先级（高 → 低）：
+
+1. `gpt_options.model` —— 通用覆盖，对任何 bot 都生效
+2. `deepseek_model` —— 本 bot 的专用配置项
+3. 内置 `DEFAULT_MODEL = "deepseek-flash"`
+
+配置示例：
+
+```yaml
+deepseek_api_key: "sk-..."
+deepseek_model: ""          # 留空即 deepseek-flash
+```
+
+命名沿用了 `gemini_model` 的既有模式（同为顶层字段，bot 内用
+`配置值 or 硬编码默认`）。`deepseek_api_key` 无法用 `gpt_options` 表达，
+所以专用字段是有必要的。
+
+先前代码里写死的 `deepseek-v4-flash` 在 API 上并不存在，是本 fork 自造的
+名字，已删除。
 
 ---
 
