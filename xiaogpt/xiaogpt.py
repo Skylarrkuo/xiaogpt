@@ -101,16 +101,13 @@ class MiGPT:
             self.config.password,
             str(self.mi_token_home),
         )
-        if not self.config.cookie:
-            # Only login with account/password when no cookie is provided
-            await account.login("micoapi")
+        # Logs in with the passToken in ~/.mi_token (written by login_qr.py),
+        # which mints a fresh serviceToken each time and needs no user input.
+        await account.login("micoapi")
         self.mina_service = MiNAService(account)
         self.miio_service = MiIOService(account)
 
     async def _init_data_hardware(self):
-        if self.config.cookie:
-            # if use cookie do not need init
-            return
         hardware_data = await self.mina_service.device_list()
         # fix multi xiaoai problems we check did first
         # why we use this way to fix?
@@ -147,21 +144,15 @@ class MiGPT:
                 )
 
     def get_cookie(self):
-        if self.config.cookie:
-            cookie_jar = parse_cookie_string(self.config.cookie)
-            # set attr from cookie fix #134
-            cookie_dict = cookie_jar.get_dict()
-            self.device_id = cookie_dict["deviceId"]
-            return cookie_jar
-        else:
-            with open(self.mi_token_home) as f:
-                user_data = json.loads(f.read())
-            user_id = user_data.get("userId")
-            service_token = user_data.get("micoapi")[1]
-            cookie_string = COOKIE_TEMPLATE.format(
-                device_id=self.device_id, service_token=service_token, user_id=user_id
-            )
-            return parse_cookie_string(cookie_string)
+        # Built from ~/.mi_token, which the account login above has just refreshed.
+        with open(self.mi_token_home) as f:
+            user_data = json.loads(f.read())
+        user_id = user_data.get("userId")
+        service_token = user_data.get("micoapi")[1]
+        cookie_string = COOKIE_TEMPLATE.format(
+            device_id=self.device_id, service_token=service_token, user_id=user_id
+        )
+        return parse_cookie_string(cookie_string)
 
     @functools.cached_property
     def chatbot(self):
@@ -225,33 +216,24 @@ class MiGPT:
             if r.status != 200:
                 body = await r.text()
                 if r.status in (401, 403):
-                    # A cookie pinned in the config is static, so re-initing just
-                    # reloads the same stale serviceToken. When logging in via
-                    # ~/.mi.token instead, re-initing re-runs the account login and
-                    # genuinely mints a fresh serviceToken.
-                    can_refresh = not self.config.cookie
+                    # Re-initing re-runs the account login, which mints a fresh
+                    # serviceToken from the passToken in ~/.mi_token.
                     if not self.auth_failed:
                         self.auth_failed = True
-                        if can_refresh:
-                            self.log.warning(
-                                "Auth error (HTTP %s), refreshing the serviceToken "
-                                "via %s...",
-                                r.status,
-                                self.mi_token_home,
-                            )
-                        else:
-                            self.log.error(
-                                "Xiaoai rejected the request with %s: the "
-                                "serviceToken is expired. Re-run `python "
-                                "get_cookie.py` to refresh the `cookie` value in "
-                                "the config. Further occurrences will be silent.",
-                                r.status,
-                            )
-                    if can_refresh:
-                        try:
-                            await self._retry()
-                        except Exception as e:
-                            self.log.error("Re-init failed: %s", e)
+                        self.log.warning(
+                            "Auth error (HTTP %s), refreshing the serviceToken "
+                            "via %s...",
+                            r.status,
+                            self.mi_token_home,
+                        )
+                    try:
+                        await self._retry()
+                    except Exception as e:
+                        self.log.error(
+                            "Refresh failed: %s. Run `python login_qr.py` and "
+                            "scan with the Mi Home app to re-authenticate.",
+                            e,
+                        )
                     # Back off instead of hammering the login endpoint.
                     await asyncio.sleep(30)
                     return None

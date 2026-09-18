@@ -48,11 +48,6 @@ def main():
         help="http proxy url like http://localhost:8080",
     )
     parser.add_argument(
-        "--cookie",
-        dest="cookie",
-        help="xiaomi cookie",
-    )
-    parser.add_argument(
         "--stream",
         dest="stream",
         action="store_true",

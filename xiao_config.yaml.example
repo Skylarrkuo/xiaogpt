@@ -4,10 +4,10 @@
 hardware: LX06
 # 小米账号
 account: ""
-# 小米密码
+# 小米密码（仅在 ~/.mi_token 不存在时才会用到）
 password: ""
-# 小米账户 cookie （如果用上面密码登录可以不填）
-cookie: ""
+# 登录凭据存放在 ~/.mi_token，由 `python login_qr.py` 扫码生成，
+# 其中的 passToken 会自动续期，无需手工维护 cookie。
 # 设备 DID，参考 https://github.com/yihong0618/MiService
 mi_did: ""
 # 使用 MI command 与小爱交互

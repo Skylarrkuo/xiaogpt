@@ -46,7 +46,7 @@ Play ChatGPT and other LLM with Xiaomi AI Speaker
 - 参考我 fork 的 [MiService](https://github.com/yihong0618/MiService) 项目 README 并在本地 terminal 跑 `micli list` 拿到你音响的 DID 成功 **别忘了设置 export MI_DID=xxx** 这个 MI_DID 用
 - run `xiaogpt --hardware ${your_hardware} --use_chatgpt_api` hardware 你看小爱屁股上有型号，输入进来，如果在屁股上找不到或者型号不对，可以用 `micli mina` 找到型号
 - 跑起来之后就可以问小爱同学问题了，“帮我"开头的问题，会发送一份给 ChatGPT 然后小爱同学用 tts 回答
-- 如果上面不可用，可以尝试用手机抓包，<https://userprofile.mina.mi.com/device_profile/v2/conversation> 找到 cookie 利用 `--cookie '${cookie}'` cookie 别忘了用单引号包裹
+- 如果密码登录不可用（小米风控要求二次验证），跑 `python login_qr.py` 用米家 App 扫码登录，凭据会写入 `~/.mi_token` 并自动续期
 - 默认用目前 ubus, 如果你的设备不支持 ubus 可以使用 `--use_command` 来使用 command 来 tts
 - 使用 `--mute_xiaoai` 选项，可以快速停掉小爱的回答
 - 使用 `--account ${account} --password ${password}`
@@ -65,7 +65,8 @@ e.g.
 export OPENAI_API_KEY=${your_api_key}
 xiaogpt --hardware LX06 --use_chatgpt_api
 # or
-xiaogpt --hardware LX06 --cookie ${cookie} --use_chatgpt_api
+xiaogpt --hardware LX06 --use_chatgpt_api
+# 登录凭据存放在 ~/.mi_token，先跑一次 python login_qr.py 用米家 App 扫码生成
 # 如果你想直接输入账号密码
 xiaogpt --hardware LX06 --account ${your_xiaomi_account} --password ${your_password} --use_chatgpt_api
 # 如果你想 mute 小米的回答
@@ -86,7 +87,8 @@ python3 xiaogpt.py --hardware LX06  --mute_xiaoai --use_gemini --gemini_key ${ge
 export OPENAI_API_KEY=${your_api_key}
 python3 xiaogpt.py --hardware LX06
 # or
-python3 xiaogpt.py --hardware LX06 --cookie ${cookie}
+python3 xiaogpt.py --hardware LX06
+# 登录凭据存放在 ~/.mi_token，先跑一次 python login_qr.py 用米家 App 扫码生成
 # 如果你想直接输入账号密码
 python3 xiaogpt.py --hardware LX06 --account ${your_xiaomi_account} --password ${your_password} --use_chatgpt_api
 # 如果你想 mute 小米的回答
@@ -150,7 +152,7 @@ ChatGLM [文档](http://open.bigmodel.cn/doc/api#chatglm_130b)
 | gemini_key            | gemini 的 apikey [参考](https://makersuite.google.com/app/apikey)                                          |                                                                                                           |                                                                  |
 | gemini_api_domain     | gemini 的自定义域名 [参考](https://github.com/antergone/palm-netlify-proxy)                                |                                                                                                           |
 | qwen_key              | qwen 的 apikey [参考](https://help.aliyun.com/zh/dashscope/developer-reference/api-details)                |                                                                                                           |                                                                  |
-| cookie                | 小爱账户 cookie（如果用上面密码登录可以不填）                                                              |                                                                                                           |                                                                  |
+| （无 cookie 配置项）   | 登录凭据改由 `~/.mi_token` 承载，用 `python login_qr.py` 扫码生成，passToken 自动续期                      |                                                                                                           |                                                                  |
 | mi_did                | 设备 did                                                                                                    |                                                                                                           |                                                                  |
 | use_command           | 使用 MI command 与小爱交互                                                                                 | `false`                                                                                                   |                                                                  |
 | mute_xiaoai           | 快速停掉小爱自己的回答                                                                                     | `true`                                                                                                    |                                                                  |
@@ -185,9 +187,9 @@ ChatGLM [文档](http://open.bigmodel.cn/doc/api#chatglm_130b)
 3. 想把它变得更好？PR Issue always welcome.
 4. 还有问题？提 Issue 哈哈
 5. Exception: Error <https://api2.mina.mi.com/admin/v2/device_list?master=0&requestId=app_ios_xxx>: Login failed [@KJZH001](https://github.com/KJZH001)<br>
-   这是由于小米风控导致，海外地区无法登录大陆的账户，请尝试 cookie 登录
-   无法抓包的可以在本地部署完毕项目后再用户文件夹`C:\Users\用户名`下面找到.mi.token，然后扔到你无法登录的服务器去<br>
-   若是 linux 则请放到当前用户的 home 文件夹，此时你可以重新执行先前的命令，不出意外即可正常登录（但 cookie 可能会过一段时间失效，需要重新获取）<br>
+   这是由于小米风控导致，海外地区无法登录大陆的账户，请改用扫码登录：`python login_qr.py`，用米家 App 扫一次码即可<br>
+   凭据会写入用户文件夹`C:\Users\用户名`下面的`.mi.token`（linux 为 `~/.mi.token`），也可以直接把这个文件扔到你无法登录的服务器去<br>
+   该文件含 passToken，xiaogpt 每次启动都会自动换取新的 serviceToken，不会像 cookie 那样过一段时间就失效<br>
    详情请见 [https://github.com/yihong0618/xiaogpt/issues/332](https://github.com/yihong0618/xiaogpt/issues/332)
 
 ## 视频教程
