@@ -3,6 +3,11 @@
 [![PyPI](https://img.shields.io/pypi/v/xiaogpt?style=flat-square)](https://pypi.org/project/xiaogpt)
 [![Docker Image Version (latest by date)](https://img.shields.io/docker/v/yihong0618/xiaogpt?color=%23086DCD&label=docker%20image)](https://hub.docker.com/r/yihong0618/xiaogpt)
 
+> **这是改造版 fork**，与上游的差异（登录方式、bot 精简、日志脱敏）见
+> [CHANGELOG.md](CHANGELOG.md)。
+> **登录不再使用 cookie**：先跑一次 `python login_qr.py` 用米家 App 扫码，
+> 凭据会写入 `~/.mi.token` 并自动续期。
+
 <https://user-images.githubusercontent.com/15976103/226803357-72f87a41-a15b-409e-94f5-e2d262eecd53.mp4>
 
 Play ChatGPT and other LLM with Xiaomi AI Speaker
