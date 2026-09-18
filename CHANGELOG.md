@@ -100,11 +100,19 @@ API key 明文写进终端，随手贴日志就会泄露。
 - **自动续期**：删除 `micoapi` 键后重启，自动换出**不同的**新 `serviceToken`
 - `-v`/`-vv` 输出中不再出现密码、DeepSeek key、手机号；`keyword` 等
   非凭据字段仍正常显示
+- **`deepseek-flash` 模型可用**：用 bot 真实代码路径（含流式与非流式）
+  调用成功，中英文回答均正常
+- **`deepseek-flash` 支持思考模式**：`thinking: {"type": "enabled"}` 返回
+  HTTP 200，响应含真实的 `reasoning_content` 字段
 
 **未验证**：
 
 - 真实语音链路（唤醒 → DeepSeek → TTS 回放）尚未端到端跑通
-- `deepseek_bot` 的默认模型名 `deepseek-v4-flash` 未实测调用成功
+
+### DeepSeek 模型
+
+模型固定为 `deepseek-flash`。先前代码里写的 `deepseek-v4-flash` 在 API 上
+并不存在，是本 fork 自造的名字，已修正。
 
 ---
 

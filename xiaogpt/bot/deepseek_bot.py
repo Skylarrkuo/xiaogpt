@@ -24,7 +24,7 @@ class DeepseekBot(ChatHistoryMixin, BaseBot):
     """
 
     name: ClassVar[str] = "Deepseek"
-    default_options: ClassVar[dict[str, str]] = {"model": "deepseek-v4-flash"}
+    default_options: ClassVar[dict[str, str]] = {"model": "deepseek-flash"}
     deepseek_api_key: str
     api_base: str = "https://api.deepseek.com"
     proxy: str | None = None
