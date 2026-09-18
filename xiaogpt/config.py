@@ -54,22 +54,15 @@ class Config:
     account: str = os.getenv("MI_USER", "")
     password: str = os.getenv("MI_PASS", "")
     openai_key: str = os.getenv("OPENAI_API_KEY", "")
-    moonshot_api_key: str = os.getenv("MOONSHOT_API_KEY", "")
-    yi_api_key: str = os.getenv("YI_API_KEY", "")
-    llama_api_key: str = os.getenv("GROQ_API_KEY", "")  # use groq
-    glm_key: str = os.getenv("CHATGLM_KEY", "")
-    gemini_key: str = os.getenv("GEMINI_KEY", "")  # keep the old rule
-    gemini_model: str = os.getenv("GEMINI_MODEL", "")  # keep the old rule
-    qwen_key: str = os.getenv("DASHSCOPE_API_KEY", "")  # keep the old rule
-    serpapi_api_key: str = os.getenv("SERPAPI_API_KEY", "")
+    gemini_key: str = os.getenv("GEMINI_KEY", "")
+    gemini_model: str = os.getenv("GEMINI_MODEL", "")
     gemini_api_domain: str = os.getenv(
         "GEMINI_API_DOMAIN", ""
     )  # 自行部署的 Google Gemini 代理
     volc_access_key: str = os.getenv("VOLC_ACCESS_KEY", "")
     volc_secret_key: str = os.getenv("VOLC_SECRET_KEY", "")
     volc_api_key: str = os.getenv("volc_api_key", "")
-    ppio_api_key: str = os.getenv("PPIO_API_KEY", "")
-    jiekou_api_key: str = os.getenv("JIEKOU_API_KEY", "")
+    deepseek_api_key: str = os.getenv("DEEPSEEK_API_KEY", "")
     proxy: str | None = None
     mi_did: str = os.getenv("MI_DID", "")
     keyword: Iterable[str] = KEY_WORD
@@ -108,15 +101,10 @@ class Config:
                 raise Exception(
                     "Using GPT api needs openai API key, please google how to"
                 )
-        if self.bot == "ppio":
-            if not self.ppio_api_key:
+        if self.bot == "deepseek":
+            if not self.deepseek_api_key:
                 raise Exception(
-                    "Using PPIO api needs PPIO API key, please visit https://ppio.com/docs/models/reference-authentication"
-                )
-        if self.bot == "jiekou":
-            if not self.jiekou_api_key:
-                raise Exception(
-                    "Using Jiekou AI api needs Jiekou API key, please visit https://api.jiekou.ai"
+                    "Using Deepseek api needs Deepseek API key, please visit https://platform.deepseek.com"
                 )
 
     @property
@@ -168,28 +156,12 @@ class Config:
                     value = [kw for kw in value if kw]
                 elif key == "use_chatgpt_api":
                     key, value = "bot", "chatgptapi"
-                elif key == "use_newbing":
-                    key, value = "bot", "newbing"
-                elif key == "use_glm":
-                    key, value = "bot", "glm"
                 elif key == "use_gemini":
                     key, value = "bot", "gemini"
-                elif key == "use_qwen":
-                    key, value = "bot", "qwen"
                 elif key == "use_doubao":
                     key, value = "bot", "doubao"
-                elif key == "use_moonshot":
-                    key, value = "bot", "moonshot"
-                elif key == "use_yi":
-                    key, value = "bot", "yi"
-                elif key == "use_llama":
-                    key, value = "bot", "llama"
-                elif key == "use_langchain":
-                    key, value = "bot", "langchain"
-                elif key == "use_ppio":
-                    key, value = "bot", "ppio"
-                elif key == "use_jiekou":
-                    key, value = "bot", "jiekou"
+                elif key == "use_deepseek":
+                    key, value = "bot", "deepseek"
                 elif key == "enable_edge_tts":
                     key, value = "tts", "edge"
                 if key in cls.__dataclass_fields__:

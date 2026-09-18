@@ -41,6 +41,7 @@ class MiGPT:
         self.mina_service = None
         self.miio_service = None
         self.in_conversation = False
+        self.auth_failed = False
         self.polling_event = asyncio.Event()
         self.last_record = asyncio.Queue(1)
         # setup logger
@@ -100,8 +101,9 @@ class MiGPT:
             self.config.password,
             str(self.mi_token_home),
         )
-        # Forced login to refresh to refresh token
-        await account.login("micoapi")
+        if not self.config.cookie:
+            # Only login with account/password when no cookie is provided
+            await account.login("micoapi")
         self.mina_service = MiNAService(account)
         self.miio_service = MiIOService(account)
 
@@ -220,6 +222,49 @@ class MiGPT:
                     "Execption when get latest ask from xiaoai: %s", str(e)
                 )
                 continue
+            if r.status != 200:
+                body = await r.text()
+                if r.status in (401, 403):
+                    # A cookie pinned in the config is static, so re-initing just
+                    # reloads the same stale serviceToken. When logging in via
+                    # ~/.mi.token instead, re-initing re-runs the account login and
+                    # genuinely mints a fresh serviceToken.
+                    can_refresh = not self.config.cookie
+                    if not self.auth_failed:
+                        self.auth_failed = True
+                        if can_refresh:
+                            self.log.warning(
+                                "Auth error (HTTP %s), refreshing the serviceToken "
+                                "via %s...",
+                                r.status,
+                                self.mi_token_home,
+                            )
+                        else:
+                            self.log.error(
+                                "Xiaoai rejected the request with %s: the "
+                                "serviceToken is expired. Re-run `python "
+                                "get_cookie.py` to refresh the `cookie` value in "
+                                "the config. Further occurrences will be silent.",
+                                r.status,
+                            )
+                    if can_refresh:
+                        try:
+                            await self._retry()
+                        except Exception as e:
+                            self.log.error("Re-init failed: %s", e)
+                    # Back off instead of hammering the login endpoint.
+                    await asyncio.sleep(30)
+                    return None
+                self.log.warning(
+                    "get latest ask from xiaoai error: HTTP %s %s",
+                    r.status,
+                    body[:200],
+                )
+                if i == 1:
+                    # tricky way to fix #282 #272 # if it is the third time we re init all data
+                    print("Maybe outof date trying to re init it")
+                    await self._retry()
+                continue
             try:
                 data = await r.json()
             except Exception:
@@ -229,6 +274,7 @@ class MiGPT:
                     print("Maybe outof date trying to re init it")
                     await self._retry()
             else:
+                self.auth_failed = False
                 return self._get_last_query(data)
         return None
 
@@ -289,10 +335,7 @@ class MiGPT:
 
     async def ask_gpt(self, query: str) -> AsyncIterator[str]:
         if not self.config.stream:
-            if self.config.bot == "glm":
-                answer = self.chatbot.ask(query, **self.config.gpt_options)
-            else:
-                answer = await self.chatbot.ask(query, **self.config.gpt_options)
+            answer = await self.chatbot.ask(query, **self.config.gpt_options)
             message = self._normalize(answer) if answer else ""
             yield message
             return
@@ -390,9 +433,6 @@ class MiGPT:
 
             # drop key words
             query = re.sub(rf"^({'|'.join(self.config.keyword)})", "", query)
-            # llama3 is not good at Chinese, so we need to add prompt in it.
-            if self.config.bot == "llama":
-                query = f"你是一个基于 llama3 的智能助手，请你跟我对话时，一定使用中文，不要夹杂一些英文单词，甚至英语短语也不能随意使用，但类似于 llama3 这样的专属名词除外，问题是：{query}"
 
             print("-" * 20)
             print("问题：" + query + "？")

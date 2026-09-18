@@ -28,26 +28,6 @@ def main():
         help="openai api key",
     )
     parser.add_argument(
-        "--moonshot_api_key",
-        dest="moonshot_api_key",
-        help="Moonshot api key",
-    )
-    parser.add_argument(
-        "--llama_api_key",
-        dest="llama_api_key",
-        help="llama(use groq) api key",
-    )
-    parser.add_argument(
-        "--yi_api_key",
-        dest="yi_api_key",
-        help="01wanwu api key",
-    )
-    parser.add_argument(
-        "--glm_key",
-        dest="glm_key",
-        help="chatglm api key",
-    )
-    parser.add_argument(
         "--gemini_key",
         dest="gemini_key",
         help="gemini api key",
@@ -58,24 +38,9 @@ def main():
         help="custom gemini api domain",
     )
     parser.add_argument(
-        "--qwen_key",
-        dest="qwen_key",
-        help="Alibaba Qwen api key",
-    )
-    parser.add_argument(
-        "--ppio_api_key",
-        dest="ppio_api_key",
-        help="PPIO api key",
-    )
-    parser.add_argument(
-        "--jiekou_api_key",
-        dest="jiekou_api_key",
-        help="Jiekou AI api key",
-    )
-    parser.add_argument(
-        "--serpapi_api_key",
-        dest="serpapi_api_key",
-        help="serp api key see https://serpapi.com/",
+        "--deepseek_api_key",
+        dest="deepseek_api_key",
+        help="Deepseek api key",
     )
     parser.add_argument(
         "--proxy",
@@ -141,41 +106,6 @@ def main():
         help="if use openai chatgpt api",
     )
     bot_group.add_argument(
-        "--use_moonshot_api",
-        dest="bot",
-        action="store_const",
-        const="moonshot",
-        help="if use moonshot api",
-    )
-    bot_group.add_argument(
-        "--use_yi_api",
-        dest="bot",
-        action="store_const",
-        const="yi",
-        help="if use yi api",
-    )
-    bot_group.add_argument(
-        "--use_langchain",
-        dest="bot",
-        action="store_const",
-        const="langchain",
-        help="if use langchain",
-    )
-    bot_group.add_argument(
-        "--use_glm",
-        dest="bot",
-        action="store_const",
-        const="glm",
-        help="if use chatglm",
-    )
-    bot_group.add_argument(
-        "--use_qwen",
-        dest="bot",
-        action="store_const",
-        const="qwen",
-        help="if use qwen",
-    )
-    bot_group.add_argument(
         "--use_gemini",
         dest="bot",
         action="store_const",
@@ -190,30 +120,11 @@ def main():
         help="if use doubao",
     )
     bot_group.add_argument(
-        "--use_llama",  # use groq
+        "--use_deepseek",
         dest="bot",
         action="store_const",
-        const="llama",
-        help="if use groq llama3",
-    )
-    bot_group.add_argument(
-        "--use_ppio",
-        dest="bot",
-        action="store_const",
-        const="ppio",
-        help="if use PPIO api",
-    )
-    bot_group.add_argument(
-        "--use_jiekou",
-        dest="bot",
-        action="store_const",
-        const="jiekou",
-        help="if use Jiekou AI api",
-    )
-    parser.add_argument(
-        "--bing_cookie_path",
-        dest="bing_cookie_path",
-        help="new bing cookies path if use new bing",
+        const="deepseek",
+        help="if use Deepseek api",
     )
     bot_group.add_argument(
         "--bot",
@@ -221,16 +132,9 @@ def main():
         help="bot type",
         choices=[
             "chatgptapi",
-            "glm",
+            "deepseek",
             "gemini",
-            "langchain",
-            "qwen",
             "doubao",
-            "moonshot",
-            "yi",
-            "llama",
-            "ppio",
-            "jiekou",
         ],
     )
     parser.add_argument(

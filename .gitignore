@@ -139,3 +139,11 @@ config/
 nohup.out
 xiao_config.yaml
 .DS_Store
+
+# 本地凭据与运行时状态 —— 这两份含明文密码，切勿提交
+config.yaml
+conf.ini
+.mi.token
+*.token
+# 20MB 的第三方二进制，且已被判定不可信（见 login_qr.py 说明）
+micli.exe

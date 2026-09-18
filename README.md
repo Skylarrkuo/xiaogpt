@@ -13,14 +13,9 @@ Play ChatGPT and other LLM with Xiaomi AI Speaker
 ## 支持的 AI 类型
 
 - ChatGPT
-- New Bing
-- [ChatGLM](http://open.bigmodel.cn/)
+- [Deepseek](https://platform.deepseek.com)
 - [Gemini](https://makersuite.google.com/app/apikey)
 - [Doubao](https://console.volcengine.com/iam/keymanage/)
-- [Moonshot](https://platform.moonshot.cn/docs/api/chat#%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B)
-- [01](https://platform.lingyiwanwu.com/apikeys)
-- [Llama3](https://console.groq.com/docs/quickstart)
-- [通义千问](https://help.aliyun.com/zh/dashscope/developer-reference/api-details)
 
 ## 获取小米音响 DID
 
@@ -58,13 +53,11 @@ Play ChatGPT and other LLM with Xiaomi AI Speaker
 - 如果有能力可以自行替换唤醒词，也可以去掉唤醒词
 - 使用 `--use_chatgpt_api` 的 api 那样可以更流畅的对话，速度特别快，达到了对话的体验，[openai api](https://platform.openai.com/account/api-keys), 命令 `--use_chatgpt_api`
 - 如果你遇到了墙需要用 Cloudflare Workers 替换 api_base 请使用 `--api_base ${url}` 来替换。 **请注意，此处你输入的 api 应该是'`https://xxxx/v1`'的字样，域名需要用引号包裹**
-- `--use_moonshot_api` and other models please refer below
 - 可以跟小爱说 `开始持续对话` 自动进入持续对话状态，`结束持续对话` 结束持续对话状态。
 - 可以使用 `--tts edge` 来获取更好的 tts 能力
 - 可以使用 `--tts fish --fish_api_key <your-fish-key> --fish_voice_key <fish-voice>` 来获取 [fish-audio](https://fish.audio/) 能力 (如何获取 fish voice 见下)
 - 可以使用 `--tts openai` 来获取 openai tts 能力
 - 可以使用 `--tts azure --azure_tts_speech_key <your-speech-key>` 来获取 Azure TTS 能力
-- 可以使用 `--use_langchain` 替代 `--use_chatgpt_api` 来调用 LangChain（默认 chatgpt）服务，实现上网检索、数学运算..
 
 e.g.
 
@@ -79,22 +72,12 @@ xiaogpt --hardware LX06 --account ${your_xiaomi_account} --password ${your_passw
 xiaogpt --hardware LX06  --mute_xiaoai --use_chatgpt_api
 # 使用流式响应，获得更快的响应
 xiaogpt --hardware LX06  --mute_xiaoai --stream
+# 如果你想使用 Deepseek
+xiaogpt --hardware LX06  --mute_xiaoai --use_deepseek --deepseek_api_key ${deepseek_api_key}
 # 如果你想使用 google 的 gemini
 xiaogpt --hardware LX06  --mute_xiaoai --use_gemini --gemini_key ${gemini_key}
 # 如果你想使用自己的 google gemini 服务
 python3 xiaogpt.py --hardware LX06  --mute_xiaoai --use_gemini --gemini_key ${gemini_key} --gemini_api_domain ${gemini_api_domain}
-# 如果你想使用阿里的通义千问
-xiaogpt --hardware LX06  --mute_xiaoai --use_qwen --qwen_key ${qwen_key}
-# 如果你想使用 kimi
-xiaogpt --hardware LX06  --mute_xiaoai --use_moonshot_api --moonshot_api_key ${moonshot_api_key}
-# 如果你想使用 llama3
-xiaogpt --hardware LX06  --mute_xiaoai --use_llama --llama_api_key ${llama_api_key}
-# 如果你想使用 01
-xiaogpt --hardware LX06  --mute_xiaoai --use_yi_api --ti_api_key ${yi_api_key}
-# 如果你想使用 LangChain+SerpApi 实现上网检索或其他本地服务（目前仅支持 stream 模式）
-export OPENAI_API_KEY=${your_api_key}
-export SERPAPI_API_KEY=${your_serpapi_key}
-xiaogpt --hardware Lx06 --use_langchain --mute_xiaoai --stream --openai_key ${your_api_key} --serpapi_api_key ${your_serpapi_key}
 ```
 
 使用 git clone 运行
@@ -110,26 +93,14 @@ python3 xiaogpt.py --hardware LX06 --account ${your_xiaomi_account} --password $
 python3 xiaogpt.py --hardware LX06  --mute_xiaoai
 # 使用流式响应，获得更快的响应
 python3 xiaogpt.py --hardware LX06  --mute_xiaoai --stream
-# 如果你想使用 ChatGLM api
-python3 xiaogpt.py --hardware LX06  --mute_xiaoai --use_glm --glm_key ${glm_key}
+# 如果你想使用 Deepseek
+python3 xiaogpt.py --hardware LX06  --mute_xiaoai --use_deepseek --deepseek_api_key ${deepseek_api_key}
 # 如果你想使用 google 的 gemini
 python3 xiaogpt.py --hardware LX06  --mute_xiaoai --use_gemini --gemini_key ${gemini_key}
 # 如果你想使用自己的 google gemini 服务
 python3 xiaogpt.py --hardware LX06  --mute_xiaoai --use_gemini --gemini_key ${gemini_key} --gemini_api_domain ${gemini_api_domain}
-# 如果你想使用阿里的通义千问
-python3 xiaogpt.py --hardware LX06  --mute_xiaoai --use_qwen --qwen_key ${qwen_key}
-# 如果你想使用 kimi
-xiaogpt --hardware LX06  --mute_xiaoai --use_moonshot_api --moonshot_api_key ${moonshot_api_key}
-# 如果你想使用 01
-xiaogpt --hardware LX06  --mute_xiaoai --use_yi_api --ti_api_key ${yi_api_key}
 # 如果你想使用豆包
 python3 xiaogpt.py --hardware LX06  --mute_xiaoai --use_doubao --stream --volc_access_key xxxx --volc_secret_key xxx
-# 如果你想使用 llama3
-python3 xiaogpt.py --hardware LX06  --mute_xiaoai --use_llama --llama_api_key ${llama_api_key}
-# 如果你想使用 LangChain+SerpApi 实现上网检索或其他本地服务（目前仅支持 stream 模式）
-export OPENAI_API_KEY=${your_api_key}
-export SERPAPI_API_KEY=${your_serpapi_key}
-python3 xiaogpt.py --hardware Lx06 --use_langchain --mute_xiaoai --stream --openai_key ${your_api_key} --serpapi_api_key ${your_serpapi_key}
 ```
 
 ## config.yaml
