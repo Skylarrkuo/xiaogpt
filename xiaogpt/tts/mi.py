@@ -1,6 +1,6 @@
 from typing import AsyncIterator
 
-from miservice import MiIOService, MiNAService, miio_command
+from miservice import MiNAService, miio_command
 
 from xiaogpt.config import Config
 from xiaogpt.tts.base import TTS
@@ -12,7 +12,6 @@ class MiTTS(TTS):
         self, mina_service: MiNAService, device_id: str, config: Config
     ) -> None:
         super().__init__(mina_service, device_id, config)
-        self.miio_service = MiIOService(mina_service.account)
 
     async def say(self, text: str) -> None:
         if not self.config.use_command:

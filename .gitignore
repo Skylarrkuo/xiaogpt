@@ -147,3 +147,5 @@ conf.ini
 *.token
 # 20MB 的第三方二进制，且已被判定不可信（见 login_qr.py 说明）
 micli.exe
+# 学习模式攒下来的兜底话术判定表：运行时数据，不是配置，随时可删
+learned_fallbacks.json

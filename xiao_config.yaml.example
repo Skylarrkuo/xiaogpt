@@ -20,8 +20,9 @@ verbose: false
 proxy: ""
 
 # ===== 对话 AI 设置 =====
-# 使用的 bot 类型，目前支持 chatgptapi, deepseek, gemini, doubao
-bot: chatgptapi
+# 使用的 bot 类型，目前支持 deepseek, mimo, glm
+# 三家都走 OpenAI 兼容协议，只有接口地址、默认模型与思考模式语义不同
+bot: deepseek
 # 自定义 prompt
 prompt: "请用300字以内回答"
 # 触发词列表
@@ -30,6 +31,29 @@ keyword:
 # 更改提示词触发列表
 change_prompt_keyword:
     - "更改提示词"
+
+# ===== 兜底接管 =====
+# 小爱自己答不上来的问题，自动转给 AI。开启后不必每次都用触发词开头——
+# 正常跟音箱说话，小爱会的她自己答，不会的 AI 接。
+# 留空即关闭（默认），行为与上游一致。
+#
+# 填的是**小爱的回答**里出现的片段，不是你说的话。匹配只在回答开头的
+# 12 个字里做，且短语不能短于 2 个字（写「我」会把所有回答都判成兜底）。
+#
+# 这里填的会与**型号自带的词干合并**，不是覆盖。L05C 已在 device.py 里固化了
+# 实测到的 3 套兜底模板，所以 L05C 上留空也是开启状态；本项用于补你自己遇到的
+# 新模板。没有的型号留空即关闭。建议先用下面的学习模式自动采集，不要凭经验填。
+fallback_answer_keyword: []
+
+# 学习模式：没命中上面词干表的回答，交给 AI 判断是否属于兜底话术，
+# 判定结果落到 learned_fallbacks.json（正负都记，下次直接查表不再调 AI）。
+# 只在开启时才产生额外的 API 调用。
+learn_fallback: false
+
+# 追问窗口：AI 回答完之后，这段时间内的下一句仍然交给 AI，不用再说触发词。
+# 0 = 关闭。
+follow_up_seconds: 0
+
 # 开始持续对话关键词
 start_conversation: "开始持续对话"
 # 结束持续对话关键词
@@ -40,16 +64,6 @@ stream: true
 # gpt_options:
 #   model: gpt-4o-mini
 gpt_options: {}
-
-# ----- OpenAI -----
-# OpenAI key
-openai_key: ""
-# OpenAI API 地址
-# 例：OpenAI 代理地址: https://myopenai.com/v1/
-# 或：Azure Open AI: https://abc.openai.azure.com/
-#api_base: "https://abc-def.openai.azure.com/"
-# Azure Open AI 的 deployment id（如使用 Azure OpenAI）
-#deployment_id: ""
 
 # ----- Deepseek -----
 # Deepseek 的 API key: https://platform.deepseek.com
@@ -62,20 +76,107 @@ deepseek_model: ""
 # gpt_options:
 #   reasoning_effort: low   # 可选 low/high/max，设置后自动开启思考模式
 
-# ----- Gemini -----
-# Gemini key: https://makersuite.google.com/app/apikey
-gemini_key: ""
-gemini_model: ""
-# Gemini 自定义域名: https://github.com/antergone/palm-netlify-proxy
-gemini_api_domain: ""
+# ----- 小米 MiMo -----
+# MiMo 的 API key: https://mimo.mi.com
+mimo_api_key: ""
+# 模型名。留空即用 mimo-v2.5；要更强（更慢更贵）就写 mimo-v2.5-pro
+mimo_model: ""
+# MiMo 官方默认开思考（enabled），本 bot 默认帮你关掉以降低延迟。
+# 想开思考就设 reasoning_effort——MiMo 没有强度参数，这个键只表示"开"：
+# gpt_options:
+#   reasoning_effort: low
 
-# ----- 火山（豆包）-----
-# 火山引擎的 access key 和 secret key，参考 https://console.volcengine.com/iam/keymanage/
-volc_access_key: ""
-volc_secret_key: ""
+# ----- 智谱 GLM -----
+# GLM 的 API key: https://open.bigmodel.cn
+glm_api_key: ""
+# 模型名。留空即用 glm-5.3-flash；要旗舰就写 glm-5.3
+glm_model: ""
+# glm-5.3 系列**关不掉**思考（官方只接受 thinking.type=enabled），所以这里
+# 默认用 reasoning_effort: low 压延迟；要复杂推理就调高：
+# gpt_options:
+#   reasoning_effort: max
+
+# ----- 接口地址覆盖（可选）-----
+# 配了就顶掉所选 provider 的官方地址，给代理 / 自建网关用
+#api_base: "https://my-proxy.example.com/v1"
 
 # ===== 语音设置 =====
-# 使用的 TTS 类型，目前支持 mi, edge, openai, azure, volc, baidu, google, minimax, fish
+# 三选一：
+#   mi     —— 小爱自己的嗓子，不额外依赖，音色固定
+#   edge   —— 微软 edge-tts，免费、快、音色多（推荐）
+#   doubao —— 火山引擎豆包语音合成大模型，音色好、支持语音指令
 tts: mi
-# TTS 参数字典，参考 https://github.com/frostming/tetos 获取可用参数
+
+# ----- edge 的音色（tts: edge 时用）-----
+# 留空则按语言自动挑一个。下面是把 `edge-tts --list-voices` 里中文相关的音色
+# 列全了（普通话 6 + 方言 2 + 粤语 3 + 台湾 3）；其它语种用命令查，共 300+：
+#   edge-tts --list-voices
+#   普通话
+#     zh-CN-XiaoxiaoNeural        女声  温暖（默认常用）
+#     zh-CN-XiaoyiNeural          女声  活泼
+#     zh-CN-YunjianNeural         男声  激情（体育/小说）
+#     zh-CN-YunxiNeural           男声  阳光（小说）
+#     zh-CN-YunxiaNeural          男声  可爱（动画）
+#     zh-CN-YunyangNeural         男声  专业播报（新闻）
+#   方言
+#     zh-CN-liaoning-XiaobeiNeural  女声  东北话
+#     zh-CN-shaanxi-XiaoniNeural    女声  陕西话
+#   粤语
+#     zh-HK-HiuGaaiNeural / zh-HK-HiuMaanNeural  女声
+#     zh-HK-WanLungNeural                        男声
+#   台湾国语
+#     zh-TW-HsiaoChenNeural / zh-TW-HsiaoYuNeural 女声
+#     zh-TW-YunJheNeural                          男声
+# tts_options:
+#   voice: zh-CN-XiaoxiaoNeural
+#   rate: "+0%"          # 语速，如 "+20%" / "-10%"
+#   volume: "+0%"        # 音量
+#   pitch: "+0Hz"        # 音调
+
+# ----- 豆包语音合成大模型（tts: doubao 时用）-----
+# API Key 在火山控制台「语音合成大模型 > API Key 管理」拿，
+# 音色 ID 在「音色库」看；都需要先开通「语音合成大模型」服务。
+# tts_options:
+#   api_key: ""
+#   speaker: zh_female_vv_uranus_bigtts
+#   # 语音指令：控制情绪 / 语气 / 风格，对应 API 的 context_texts
+#   instruction: "用特别特别痛心的语气说话吗?"
+#   # 方言：beijing / dongbei / henan / shaanxi / shanghai / sichuan / tianjin / yue
+#   dialect: sichuan
+#   speech_rate: 0       # 语速 -50 ~ 100（100 = 2 倍速）
+#   loudness_rate: 0     # 音量 -50 ~ 100
+#   loudness_boost: 50   # 音量补偿。豆包出来的声音比小爱本嗓轻，这里固定加一档；
+#                        # 实测 +50 约 +3.6 dB 且峰值仍有余量，再高会被服务端压限。
+#                        # 觉得还不够就调到 80，0 = 不补偿
+#   pitch: 0             # 音调 -12 ~ 12（post_process.pitch）
+#   language: zh-cn      # 语种，留空自动；zh-cn 支持中英混读
+#   # 没列的参数（发音词典等）直接透传：
+#   # additions: {}
+#   # post_process: {}
+
 tts_options: {}
+
+# 用说话的方式改语音指令的触发词（仅豆包 TTS 支持，留空即关闭）：
+#   小爱同学，语音指令 用四川话温柔一点
+change_tts_instruction_keyword:
+    - "语音指令"
+
+# 豆包 TTS：每句回答都先让 AI 判断「这句话该怎么念」，再据此调语速 / 音量 /
+# 方言（以及语音指令字段）。代价是每次回答多一次很短的模型调用（实测 0.7~1.8 秒，
+# 与回答生成并行，不影响首句出声）。
+# 用「语音指令 xxx」手动设过一次之后，本次运行不再自动覆盖。
+tts_auto_instruction: true
+
+# ===== 对话记忆与缓存 =====
+# 历史**只在尾部追加**，太长才把最老的一半压成摘要——这样请求前缀保持不变，
+# 大模型的前缀缓存才能一直命中（DeepSeek 命中价约为未命中的 1/10）。
+# 实测：前缀短于约 250 tokens 时基本不命中，随对话变长命中率升到 50% 上下。
+# 历史超过这么多字符就压缩（0 = 不压缩、历史无限增长）
+history_budget_chars: 16000
+# 压缩后至少保留最近这么多轮原文（摘要毕竟有损）
+history_keep_turns: 4
+# 摘要长度上限（字）
+summary_max_chars: 500
+# 流式请求要不要带 stream_options.include_usage（不带就拿不到用量、也就看不到
+# 缓存命中统计）。留空 = 按 provider 实测结论（目前只有 deepseek 打开）。
+#stream_usage: true

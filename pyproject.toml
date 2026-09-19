@@ -16,21 +16,15 @@ dependencies = [
     "openai>=1",
     "aiohttp",
     "rich",
-    "zhipuai>=2.0.1",
     "httpx[socks]",
-    "langchain>=0.0.343",
-    "beautifulsoup4>=4.12.0",
-    "google-search-results>=2.4.2",
-    "google-generativeai",
-    "numexpr>=2.8.6",
-    "dashscope>=1.10.0",
+    # xiaogpt/utils.py 里用了 requests.utils.cookiejar_from_dict。
+    # 过去它是被 langchain / dashscope 顺带装上的，那几个包已随 bot 一起删掉，
+    # 这里必须显式声明，否则干净环境会在 import 期就崩。
+    "requests",
     "tetos>=0.2.1",
-    "groq>=0.5.0",
     "pyyaml>=6.0.1",
-    "langchain-community>=0.0.38",
     # lingua doesn't ship wheels for python 3.13 nor sdist
     "lingua-language-detector>=2.0.2; python_version < \"3.13\"",
-    "volcengine-python-sdk>=1.1.5",
 ]
 license = {text = "MIT"}
 dynamic = ["version", "optional-dependencies"]
